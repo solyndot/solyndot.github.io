@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sol's RNG — Aura Chance & Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0f0f13;
+            --card-bg: #1a1a23;
+            --accent: #7c4dff;
+            --accent-hover: #651fff;
+            --text-main: #ffffff;
+            --text-muted: #a0a0b0;
+            --border: #2f2f3f;
+            --success: #00e676;
+            --danger: #ff1744;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        h1 { margin-bottom: 20px; font-size: 1.5rem; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+        
+        /* Grid Layout */
+        .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .full-row { width: 100%; margin-bottom: 16px; }
+        
+        @media (max-width: 600px) {
+            .grid-row { grid-template-columns: 1fr; }
+        }
+
+        /* Form Elements */
+        label { display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-muted); }
+        input, select {
+            width: 100%;
+            background: #0a0a0e;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+        button {
+            cursor: pointer;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            transition: background 0.2s;
+            font-size: 0.95rem;
+        }
+        button:hover { background: var(--accent-hover); }
+        button:disabled { background: var(--border); cursor: not-allowed; color: var(--text-muted); }
+        
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #d50000; }
+        .btn-secondary { background: var(--border); }
+        .btn-secondary:hover { background: #3f3f50; }
+
+        /* Output Sections */
+        .result-box {
+            background: rgba(124, 77, 255, 0.1);
+            border-left: 4px solid var(--accent);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .result-text { font-weight: bold; font-size: 1.1rem; word-break: break-word; }
+        .sub-text { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            background: #13131a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .stat-item div:first-child { color: var(--text-muted); font-size: 0.8rem; }
+        .stat-item div:last-child { font-size: 1.1rem; font-weight: bold; }
+
+        /* Modal for Templates */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+        }
+        .modal-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { overflow-y: auto; padding: 16px; flex-grow: 1; }
+        .template-list { list-style: none; }
+        .template-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .template-item:hover { background: rgba(255,255,255,0.05); }
+        .template-rarity { color: var(--accent); font-weight: bold; }
+        
+        .search-bar { width: 100%; margin-bottom: 10px; }
+        
+        /* Helper classes */
+        .flex-gap { display: flex; gap: 10px; align-items: flex-end; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sol's RNG — Calculator & Simulator</h1>
+
+    <!-- Calculator Section -->
+    <div class="grid-row">
+        <div>
+            <label for="baseRarity">Base Rarity (1 in N)</label>
+            <input type="text" id="baseRarity" placeholder="e.g. 5,000,000" value="5,000,000">
+        </div>
+        <div>
+            <label for="luck">Luck Multiplier</label>
+            <input type="number" id="luck" step="0.1" value="1.0">
+        </div>
+    </div>
+
+    <div class="full-row flex-gap">
+        <button onclick="calculateChance()">Calculate Chance</button>
+        <button class="btn-secondary" onclick="openTemplates()">Select Aura Template</button>
+    </div>
+
+    <div class="result-box">
+        <div class="result-text" id="resultText">Chance per roll: ...</div>
+        <div class="sub-text" id="resultSub"></div>
+    </div>
+
+    <!-- Simulator Section -->
+    <h2 style="font-size:1.1rem; color: var(--text-muted); margin-bottom:10px; border-top: 1px solid var(--border); padding-top:15px;">Simulator Settings</h2>
+    
+    <div class="grid-row">
+        <div>
+            <label for="simSpeed">Rolls per Unit (Speed)</label>
+            <input type="number" id="simSpeed" value="1">
+        </div>
+        <div>
+            <label for="simMode">Simulation Mode</label>
+            <select id="simMode">
+                <option value="frame">Rolls per Frame (Fastest)</option>
+                <option value="sec" selected>Rolls per Second (Realtime)</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="full-row">
+        <label for="maxRolls">Max Rolls Cap</label>
+        <input type="text" id="maxRolls" value="1,000,000,000">
+    </div>
+
+    <div class="full-row flex-gap">
+        <button id="btnStart" onclick="startSimulation()">Start Simulation</button>
+        <button id="btnStop" class="btn-danger" onclick="stopSimulation()" disabled>Stop</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div>Status</div>
+            <div id="simStatus" style="color: var(--text-muted)">Idle</div>
+        </div>
+        <div class="stat-item">
+            <div>Rolls so far</div>
+            <div id="simRolls">0</div>
+        </div>
+        <div class="stat-item">
+            <div>Elapsed Time</div>
+            <div id="simTime">0.00s</div>
+        </div>
+    </div>
+</div>
+
+<!-- Templates Modal -->
+<div class="modal-overlay" id="templateModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Aura Templates</h3>
+            <button style="padding: 4px 10px; background: transparent; color: white; border: 1px solid var(--border);" onclick="closeTemplates()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="text" class="search-bar" id="templateSearch" placeholder="Search auras..." oninput="filterTemplates()">
+            <div style="margin-bottom:10px; font-size:0.8rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+                <span>Click an aura to apply.</span>
+                <span id="sourceStatus">Loading Wiki...</span>
+            </div>
+            <ul class="template-list" id="templateList">
+                <!-- Items injected here -->
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const TEMPLATE_THRESHOLD = 1000000; // 1M+
+    const WIKI_URL = "https://sol-rng.fandom.com/wiki/Auras";
+    // We use a CORS proxy because browsers block fetching Fandom directly
+    const PROXY_URL = "https://api.allorigins.win/get?url=" + encodeURIComponent(WIKI_URL);
+
+    // --- Fallback Data ---
+    const FALLBACK_TEMPLATES = [
+        {name: "Wonderland", rarity: 12000000},
+        {name: "Sailor", rarity: 12000000},
+        {name: "STARSCOURGE", rarity: 10000000},
+        {name: "Blizzard", rarity: 27315000},
+        {name: "CHROMATIC", rarity: 20000000},
+        {name: "AVIATOR", rarity: 24000000},
+        {name: "Arcane: Dark", rarity: 30000000},
+        {name: "Ethereal", rarity: 35000000},
+        {name: "FATAL ERROR", rarity: 40413000},
+        {name: "{Juxtaposition}", rarity: 40440400},
+        {name: "Overseer", rarity: 45000000},
+        {name: "Exotic: APEX", rarity: 49999500},
+        {name: "Matrix", rarity: 50000000},
+        {name: "Runic", rarity: 50000000},
+        {name: "SENTINEL", rarity: 60000000},
+        {name: "CHROMATIC: GENESIS", rarity: 99999999},
+        {name: "STARSCOURGE: RADIANT", rarity: 100000000},
+        {name: "AbyssalHunter", rarity: 100000000},
+        {name: "Impeached", rarity: 200000000},
+        {name: "Archangel", rarity: 250000000},
+        {name: "Sovereign", rarity: 750000000},
+    ];
+
+    let loadedTemplates = [...FALLBACK_TEMPLATES];
+
+    // --- Utilities ---
+    function parseNumber(str) {
+        return parseFloat(str.replace(/,/g, '').trim());
+    }
+
+    function formatNumber(num) {
+        return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+
+    function formatOneIn(chance) {
+        if (chance <= 0) return "1 in ∞";
+        let n = 1.0 / chance;
+        if (n >= 1e9) return `~1 in ${n.toExponential(2)}`;
+        return `1 in ${formatNumber(n)}`;
+    }
+
+    // --- Calculator Logic ---
+    function calculateChance() {
+        const baseStr = document.getElementById('baseRarity').value;
+        const luckStr = document.getElementById('luck').value;
+        
+        const base = parseNumber(baseStr);
+        const luck = parseNumber(luckStr);
+
+        if (isNaN(base) || base <= 0) {
+            alert("Please enter a valid positive number for Base Rarity.");
+            return null;
+        }
+        if (isNaN(luck) || luck < 0) {
+            alert("Please enter a valid positive number for Luck.");
+            return null;
+        }
+
+        const chance = Math.min(Math.max(luck / base, 0), 1);
+        
+        const pct = (chance * 100).toFixed(8);
+        const oneIn = formatOneIn(chance);
+        
+        document.getElementById('resultText').innerText = `Chance per roll: ${oneIn}`;
+        document.getElementById('resultSub').innerText = `${chance.toExponential(4)} (${pct}%)`;
+        
+        return chance;
+    }
+
+    // --- Simulator Logic ---
+    let simState = {
+        running: false,
+        startTime: 0,
+        totalRolls: 0,
+        probability: 0,
+        maxRolls: 0,
+        rafId: null,
+        updateInterval: null
+    };
+
+    function startSimulation() {
+        const chance = calculateChance();
+        if (chance === null) return;
+        
+        if (chance <= 0) {
+            alert("Chance is 0. You will never get it.");
+            return;
+        }
+        if (chance >= 1) {
+            alert("Chance is 100%. You will get it on the first roll.");
+            return;
+        }
+
+        const maxStr = document.getElementById('maxRolls').value;
+        const speedStr = document.getElementById('simSpeed').value;
+        const mode = document.getElementById('simMode').value;
+
+        const maxRolls = parseNumber(maxStr);
+        const rollsPerUnit = parseFloat(speedStr);
+
+        if (isNaN(maxRolls) || maxRolls <= 0) {
+            alert("Invalid Max Rolls.");
+            return;
+        }
+
+        // Setup UI
+        simState.running = true;
+        simState.probability = chance;
+        simState.maxRolls = maxRolls;
+        simState.totalRolls = 0;
+        simState.startTime = performance.now();
+        
+        document.getElementById('btnStart').disabled = true;
+        document.getElementById('btnStop').disabled = false;
+        document.getElementById('simStatus').innerText = "Running...";
+        document.getElementById('simStatus').style.color = "var(--accent)";
+
+        // Calculate Batch Size per Frame
+        // 60 FPS target. 
+        let batchSize = 1;
+        if (mode === 'frame') {
+            batchSize = Math.max(1, Math.round(rollsPerUnit));
+        } else {
+            // Per second
+            batchSize = Math.max(1, Math.round(rollsPerUnit / 60));
+        }
+
+        // Helper values for Geometric Skipping
+        const p = simState.probability;
+        const q = 1.0 - p;
+        const logQ = Math.log(q);
+
+        // Simulation Loop
+        const loop = () => {
+            if (!simState.running) return;
+
+            let currentBatch = batchSize;
+            
+            // If remaining rolls to cap is smaller than batch, clamp it
+            if (simState.totalRolls + currentBatch > simState.maxRolls) {
+                currentBatch = simState.maxRolls - simState.totalRolls;
+            }
+
+            if (currentBatch <= 0) {
+                finishSimulation(false);
+                return;
+            }
+
+            // Geometric distribution logic
+            // Probability that we DO NOT get it in 'currentBatch' rolls is q^currentBatch
+            const qn = Math.pow(q, currentBatch);
+
+            // Check if success happened in this batch
+            if (Math.random() < (1.0 - qn)) {
+                // Success! Find out exactly which roll it was
+                // Generate U uniformly in [0, 1 - q^n]
+                // Wait, standard geometric inversion: k = ceil(ln(1-U)/ln(1-p))
+                // Or optimized: We know it happened.
+                let U = Math.random();
+                while(U === 0) U = Math.random(); // avoid log(0)
+                
+                // k is rolls until success
+                let k = Math.floor(Math.log(U) / logQ) + 1;
+                if (k < 1) k = 1;
+                if (k > currentBatch) k = currentBatch;
+
+                simState.totalRolls += k;
+                finishSimulation(true);
+            } else {
+                // No success in this batch
+                simState.totalRolls += currentBatch;
+                
+                // Check cap
+                if (simState.totalRolls >= simState.maxRolls) {
+                    finishSimulation(false);
+                } else {
+                    simState.rafId = requestAnimationFrame(loop);
+                }
+            }
+        };
+
+        // Start loop
+        simState.rafId = requestAnimationFrame(loop);
+
+        // UI Update Loop (decoupled from sim loop for performance)
+        simState.updateInterval = setInterval(() => {
+            if(simState.running) {
+                const now = performance.now();
+                const elapsed = (now - simState.startTime) / 1000;
+                document.getElementById('simRolls').innerText = formatNumber(simState.totalRolls);
+                document.getElementById('simTime').innerText = elapsed.toFixed(2) + 's';
+            }
+        }, 100);
+    }
+
+    function stopSimulation() {
+        if (!simState.running) return;
+        simState.running = false;
+        cancelAnimationFrame(simState.rafId);
+        clearInterval(simState.updateInterval);
+        
+        const now = performance.now();
+        const elapsed = (now - simState.startTime) / 1000;
+        
+        document.getElementById('simStatus').innerText = "Stopped";
+        document.getElementById('simStatus').style.color = "var(--text-muted)";
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('btnStop').disabled = true;
+        
+        // Final UI update
+        document.getElementById('simRolls').innerText = formatNumber(simState.totalRolls);
+        document.getElementById('simTime').innerText = elapsed.toFixed(2) + 's';
+    }
+
+    function finishSimulation(success) {
+        simState.running = false;
+        cancelAnimationFrame(simState.rafId);
+        clearInterval(simState.updateInterval);
+
+        const now = performance.now();
+        const elapsed = (now - simState.startTime) / 1000;
+
+        document.getElementById('simRolls').innerText = formatNumber(simState.totalRolls);
+        document.getElementById('simTime').innerText = elapsed.toFixed(2) + 's';
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('btnStop').disabled = true;
+
+        if (success) {
+            document.getElementById('simStatus').innerText = "SUCCESS!";
+            document.getElementById('simStatus').style.color = "var(--success)";
+            // Small delay to allow UI to repaint before alert
+            setTimeout(() => alert(`You got the aura in ${formatNumber(simState.totalRolls)} rolls! Time: ${elapsed.toFixed(2)}s`), 10);
+        } else {
+            document.getElementById('simStatus').innerText = "Max Limit Reached";
+            document.getElementById('simStatus').style.color = "var(--danger)";
+            setTimeout(() => alert(`Failed to get aura after ${formatNumber(simState.totalRolls)} rolls.`), 10);
+        }
+    }
+
+    // --- Template System ---
+    function openTemplates() {
+        document.getElementById('templateModal').style.display = "flex";
+        renderTemplates();
+        // Try to fetch fresher data if we haven't successfully yet (or just always refresh)
+        fetchTemplatesFromWiki();
+    }
+
+    function closeTemplates() {
+        document.getElementById('templateModal').style.display = "none";
+    }
+
+    function renderTemplates() {
+        const list = document.getElementById('templateList');
+        list.innerHTML = "";
+        const search = document.getElementById('templateSearch').value.toLowerCase();
+
+        const filtered = loadedTemplates.filter(t => {
+            return t.name.toLowerCase().includes(search) && t.rarity >= TEMPLATE_THRESHOLD;
+        });
+
+        // Sort by rarity
+        filtered.sort((a,b) => a.rarity - b.rarity);
+
+        filtered.forEach(t => {
+            const li = document.createElement('li');
+            li.className = "template-item";
+            li.innerHTML = `
+                <span>${t.name}</span>
+                <span class="template-rarity">1 in ${formatNumber(t.rarity)}</span>
+            `;
+            li.onclick = () => {
+                document.getElementById('baseRarity').value = formatNumber(t.rarity);
+                closeTemplates();
+                calculateChance();
+            };
+            list.appendChild(li);
+        });
+    }
+
+    function filterTemplates() {
+        renderTemplates();
+    }
+
+    async function fetchTemplatesFromWiki() {
+        const statusSpan = document.getElementById('sourceStatus');
+        statusSpan.innerText = "Fetching Wiki...";
+        
+        try {
+            const response = await fetch(PROXY_URL);
+            if (!response.ok) throw new Error("Proxy error");
+            const data = await response.json();
+            const html = data.contents;
+
+            // Simple Regex parser similar to Python script logic
+            // Look for 1 / N or just N
+            const lines = html.split(/\r?\n/);
+            const found = {};
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                // Remove tags for text analysis
+                const text = line.replace(/<[^>]+>/g, '');
+                
+                // Regex for "1 / 1,000,000" or "1/1000000"
+                let match = text.match(/1\s*\/\s*([0-9][0-9,]*)/);
+                
+                // Fallback regex for just big numbers "12,000,000" (often in tables)
+                if (!match) {
+                   // Match number > 999 with commas
+                   const numMatch = text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
+                   if(numMatch) match = [numMatch[0], numMatch[1]];
+                }
+
+                if (match) {
+                    const numStr = match[1].replace(/,/g, '');
+                    const rarity = parseInt(numStr, 10);
+                    
+                    if (!isNaN(rarity) && rarity >= TEMPLATE_THRESHOLD) {
+                        // Find Name: Look backwards 1-6 lines
+                        let name = null;
+                        for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
+                            let candidate = lines[k].replace(/<[^>]+>/g, '').trim();
+                            if (!candidate) continue;
+                            if (candidate.match(/[0-9],/)) continue; // Likely another number
+                            if (candidate.toLowerCase().includes("image")) continue;
+                            if (candidate.length > 100) continue;
+                            
+                            name = candidate;
+                            break;
+                        }
+                        
+                        if (name) {
+                            // If duplicate name, keep the rarer one (or lower? Python kept rarer)
+                            if (!found[name] || rarity > found[name]) {
+                                found[name] = rarity;
+                            }
+                        }
+                    }
+                }
+            }
+
+            const newTemplates = [];
+            for (const [name, rarity] of Object.entries(found)) {
+                newTemplates.push({name, rarity});
+            }
+
+            if (newTemplates.length > 0) {
+                loadedTemplates = newTemplates;
+                renderTemplates();
+                statusSpan.innerText = "Wiki Data Loaded";
+                statusSpan.style.color = "var(--success)";
+            } else {
+                throw new Error("No data found");
+            }
+
+        } catch (e) {
+            console.error(e);
+            statusSpan.innerText = "Wiki Fetch Failed (Using Built-in)";
+            statusSpan.style.color = "var(--danger)";
+        }
+    }
+
+    // --- Init ---
+    // Close modal on click outside
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('templateModal')) {
+            closeTemplates();
+        }
+    }
+    
+    // Initial Calc
+    calculateChance();
+
+</script>
+
+</body>
+</html>
