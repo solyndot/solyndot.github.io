@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sol's RNG Calculator</title>
+    <style>
+        :root {
+            --accent-start: #7c4dff;
+            --accent-end: #448aff;
+            --accent-glow: rgba(124, 77, 255, 0.5);
+            --text-main: #ffffff;
+            --text-muted: #b0b0d0;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(20, 20, 30, 0.75);
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --success: #00e676;
+            --danger: #ff1744;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        
+        body {
+            /* Moving Gradient Background */
+            background: linear-gradient(-45deg, #05050a, #1a1a2e, #16213e, #250c30);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            /* Glassmorphism Effect */
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            padding: 30px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease;
+        }
+
+        h1 { 
+            margin-bottom: 25px; 
+            font-size: 2rem; 
+            text-align: center;
+            background: linear-gradient(90deg, #fff, #a0a0ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(124, 77, 255, 0.3);
+            border-bottom: 1px solid var(--border); 
+            padding-bottom: 15px; 
+        }
+        
+        /* Grid Layout */
+        .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .full-row { width: 100%; margin-bottom: 20px; }
+        
+        @media (max-width: 600px) {
+            .grid-row { grid-template-columns: 1fr; }
+        }
+
+        /* Form Elements */
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted); font-weight: 500; letter-spacing: 0.5px; }
+        
+        input, select {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: var(--accent-start);
+            box-shadow: 0 0 15px var(--accent-glow);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Fancy Buttons */
+        button {
+            cursor: pointer;
+            background-size: 200% auto;
+            background-image: linear-gradient(45deg, var(--accent-start) 0%, var(--accent-end) 51%, var(--accent-start) 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 50px; /* Pill shape */
+            font-weight: 600;
+            font-size: 1rem;
+            transition: 0.4s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover { 
+            background-position: right center; /* move the gradient */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:disabled { 
+            background: #2f2f3f; 
+            cursor: not-allowed; 
+            color: var(--text-muted); 
+            box-shadow: none;
+            transform: none;
+        }
+        
+        .btn-danger { 
+            background-image: linear-gradient(45deg, #ff1744 0%, #d50000 51%, #ff1744 100%);
+            box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3);
+        }
+        .btn-danger:hover {
+             box-shadow: 0 6px 20px rgba(255, 23, 68, 0.6);
+        }
+
+        .btn-secondary { 
+            background-image: linear-gradient(45deg, #4a4a5e 0%, #6a6a80 51%, #4a4a5e 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Output Sections */
+        .result-box {
+            background: rgba(124, 77, 255, 0.1);
+            border: 1px solid rgba(124, 77, 255, 0.3);
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Subtle glow animation behind result */
+        .result-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(124, 77, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 10s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes rotate { 100% { transform: rotate(360deg); } }
+
+        .result-text { 
+            font-weight: 700; 
+            font-size: 1.4rem; 
+            word-break: break-word; 
+            position: relative; 
+            z-index: 1;
+            color: #e0e0ff;
+        }
+        .sub-text { 
+            font-size: 0.9rem; 
+            color: var(--text-muted); 
+            margin-top: 8px; 
+            position: relative; 
+            z-index: 1; 
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 15px;
+            border: 1px solid var(--border);
+        }
+        .stat-item { text-align: center; }
+        .stat-item div:first-child { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-item div:last-child { font-size: 1.2rem; font-weight: bold; color: #fff; }
+
+        /* Simulator Header */
+        h2 {
+            font-size: 1.1rem; 
+            color: var(--text-muted); 
+            margin-bottom: 20px; 
+            border-top: 1px solid var(--border); 
+            padding-top: 20px; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        /* Modal for Templates */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal {
+            background: #1a1a23;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #444;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+        .modal-header { 
+            padding: 20px; 
+            background: #20202b; 
+            border-bottom: 1px solid #333; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .modal-header h3 { color: white; font-weight: 600; }
+        .modal-body { overflow-y: auto; padding: 20px; flex-grow: 1; }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a23; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-start); }
+
+        .template-list { list-style: none; }
+        .template-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+        .template-item:hover { background: rgba(124, 77, 255, 0.15); }
+        .template-rarity { color: #a0a0ff; font-weight: bold; font-family: monospace; font-size: 1.1em; }
+        
+        .search-bar { width: 100%; margin-bottom: 15px; background: #111; border-color: #333; }
+        
+        /* Helper classes */
+        .flex-gap { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        .flex-gap button { flex: 1; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Sol's RNG Calculator</h1>
+
+    <!-- Calculator Section -->
+    <div class="grid-row">
+        <div>
+            <label for="baseRarity">Base Rarity (1 in N)</label>
+            <input type="text" id="baseRarity" placeholder="e.g. 5,000,000" value="5,000,000">
+        </div>
+        <div>
+            <label for="luck">Luck Multiplier</label>
+            <input type="number" id="luck" step="0.1" value="1.0">
+        </div>
+    </div>
+
+    <div class="full-row flex-gap">
+        <button onclick="calculateChance()">Calculate Chance</button>
+        <button class="btn-secondary" onclick="openTemplates()">Select Aura Template</button>
+    </div>
+
+    <div class="result-box">
+        <div class="result-text" id="resultText">Chance per roll: ...</div>
+        <div class="sub-text" id="resultSub"></div>
+    </div>
+
+    <!-- Simulator Section -->
+    <h2>Simulator Settings</h2>
+    
+    <div class="grid-row">
+        <div>
+            <label for="simSpeed">Rolls per Unit (Speed)</label>
+            <input type="number" id="simSpeed" value="1">
+        </div>
+        <div>
+            <label for="simMode">Simulation Mode</label>
+            <select id="simMode">
+                <option value="frame">Rolls per Frame (Fastest)</option>
+                <option value="sec" selected>Rolls per Second (Realtime)</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="full-row">
+        <label for="maxRolls">Max Rolls Cap</label>
+        <input type="text" id="maxRolls" value="1,000,000,000">
+    </div>
+
+    <div class="full-row flex-gap">
+        <button id="btnStart" onclick="startSimulation()">Start Simulation</button>
+        <button id="btnStop" class="btn-danger" onclick="stopSimulation()" disabled>Stop</button>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div>Status</div>
+            <div id="simStatus" style="color: var(--text-muted)">Idle</div>
+        </div>
+        <div class="stat-item">
+            <div>Rolls so far</div>
+            <div id="simRolls">0</div>
+        </div>
+        <div class="stat-item">
+            <div>Elapsed Time</div>
+            <div id="simTime">0.00s</div>
+        </div>
+    </div>
+</div>
+
+<!-- Templates Modal -->
+<div class="modal-overlay" id="templateModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Aura Templates</h3>
+            <button style="padding: 6px 12px; background: transparent; color: white; border: 1px solid #555; border-radius: 4px; cursor: pointer;" onclick="closeTemplates()">✕</button>
+        </div>
+        <div class="modal-body">
+            <input type="text" class="search-bar" id="templateSearch" placeholder="Search auras..." oninput="filterTemplates()">
+            <div style="margin-bottom:15px; font-size:0.8rem; color:var(--text-muted); display:flex; justify-content:space-between;">
+                <span>Click an aura to apply.</span>
+                <span id="sourceStatus">Loading Wiki...</span>
+            </div>
+            <ul class="template-list" id="templateList">
+                <!-- Items injected here -->
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    const TEMPLATE_THRESHOLD = 1000000; // 1M+
+    const WIKI_URL = "https://sol-rng.fandom.com/wiki/Auras";
+    // We use a CORS proxy because browsers block fetching Fandom directly
+    const PROXY_URL = "https://api.allorigins.win/get?url=" + encodeURIComponent(WIKI_URL);
+
+    // --- Fallback Data ---
+    const FALLBACK_TEMPLATES = [
+        {name: "Find The Probability Of This Aura", rarity: 95030020659039500},
+        {name: "Wonderland", rarity: 12000000},
+        {name: "Sailor", rarity: 12000000},
+        {name: "STARSCOURGE", rarity: 10000000},
+        {name: "Blizzard", rarity: 27315000},
+        {name: "CHROMATIC", rarity: 20000000},
+        {name: "AVIATOR", rarity: 24000000},
+        {name: "Arcane: Dark", rarity: 30000000},
+        {name: "Ethereal", rarity: 35000000},
+        {name: "FATAL ERROR", rarity: 40413000},
+        {name: "{Juxtaposition}", rarity: 40440400},
+        {name: "Overseer", rarity: 45000000},
+        {name: "Exotic: APEX", rarity: 49999500},
+        {name: "Matrix", rarity: 50000000},
+        {name: "Runic", rarity: 50000000},
+        {name: "SENTINEL", rarity: 60000000},
+        {name: "CHROMATIC: GENESIS", rarity: 99999999},
+        {name: "STARSCOURGE: RADIANT", rarity: 100000000},
+        {name: "AbyssalHunter", rarity: 100000000},
+        {name: "Impeached", rarity: 200000000},
+        {name: "Archangel", rarity: 250000000},
+        {name: "Sovereign", rarity: 750000000},
+        {name: "Luminosity", rarity: 1200000000},
+        {name: "Equinox", rarity: 2500000000},
+    ];
+
+    let loadedTemplates = [...FALLBACK_TEMPLATES];
+
+    // --- Utilities ---
+    function parseNumber(str) {
+        return parseFloat(str.replace(/,/g, '').trim());
+    }
+
+    function formatNumber(num) {
+        return num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
+
+    function formatOneIn(chance) {
+        if (chance <= 0) return "1 in ∞";
+        let n = 1.0 / chance;
+        if (n >= 1e9) return `~1 in ${n.toExponential(2)}`;
+        return `1 in ${formatNumber(n)}`;
+    }
+
+    // --- Calculator Logic ---
+    function calculateChance() {
+        const baseStr = document.getElementById('baseRarity').value;
+        const luckStr = document.getElementById('luck').value;
+        
+        const base = parseNumber(baseStr);
+        const luck = parseNumber(luckStr);
+
+        if (isNaN(base) || base <= 0) {
+            alert("Please enter a valid positive number for Base Rarity.");
+            return null;
+        }
+        if (isNaN(luck) || luck < 0) {
+            alert("Please enter a valid positive number for Luck.");
+            return null;
+        }
+
+        const chance = Math.min(Math.max(luck / base, 0), 1);
+        
+        const pct = (chance * 100).toFixed(8);
+        const oneIn = formatOneIn(chance);
+        
+        document.getElementById('resultText').innerText = `Chance per roll: ${oneIn}`;
+        document.getElementById('resultSub').innerText = `${chance.toExponential(4)} (${pct}%)`;
+        
+        return chance;
+    }
+
+    // --- Simulator Logic ---
+    let simState = {
+        running: false,
+        startTime: 0,
+        totalRolls: 0,
+        probability: 0,
+        maxRolls: 0,
+        rafId: null,
+        updateInterval: null
+    };
+
+    function startSimulation() {
+        const chance = calculateChance();
+        if (chance === null) return;
+        
+        if (chance <= 0) {
+            alert("Chance is 0. You will never get it.");
+            return;
+        }
+        if (chance >= 1) {
+            alert("Chance is 100%. You will get it on the first roll.");
+            return;
+        }
+
+        const maxStr = document.getElementById('maxRolls').value;
+        const speedStr = document.getElementById('simSpeed').value;
+        const mode = document.getElementById('simMode').value;
+
+        const maxRolls = parseNumber(maxStr);
+        const rollsPerUnit = parseFloat(speedStr);
+
+        if (isNaN(maxRolls) || maxRolls <= 0) {
+            alert("Invalid Max Rolls.");
+            return;
+        }
+
+        // Setup UI
+        simState.running = true;
+        simState.probability = chance;
+        simState.maxRolls = maxRolls;
+        simState.totalRolls = 0;
+        simState.startTime = performance.now();
+        
+        document.getElementById('btnStart').disabled = true;
+        document.getElementById('btnStop').disabled = false;
+        document.getElementById('simStatus').innerText = "Running...";
+        document.getElementById('simStatus').style.color = "#a0a0ff";
+
+        // Calculate Batch Size per Frame
+        // 60 FPS target. 
+        let batchSize = 1;
+        if (mode === 'frame') {
+            batchSize = Math.max(1, Math.round(rollsPerUnit));
+        } else {
+            // Per second
+            batchSize = Math.max(1, Math.round(rollsPerUnit / 60));
+        }
+
+        // Helper values for Geometric Skipping
+        const p = simState.probability;
+        const q = 1.0 - p;
+        const logQ = Math.log(q);
+
+        // Simulation Loop
+        const loop = () => {
+            if (!simState.running) return;
+
+            let currentBatch = batchSize;
+            
+            // If remaining rolls to cap is smaller than batch, clamp it
+            if (simState.totalRolls + currentBatch > simState.maxRolls) {
+                currentBatch = simState.maxRolls - simState.totalRolls;
+            }
+
+            if (currentBatch <= 0) {
+                finishSimulation(false);
+                return;
+            }
+
+            // Geometric distribution logic
+            // Probability that we DO NOT get it in 'currentBatch' rolls is q^currentBatch
+            const qn = Math.pow(q, currentBatch);
+
+            // Check if success happened in this batch
+            if (Math.random() < (1.0 - qn)) {
+                // Success! Find out exactly which roll it was
+                let U = Math.random();
+                while(U === 0) U = Math.random(); // avoid log(0)
+                
+                // k is rolls until success
+                let k = Math.floor(Math.log(U) / logQ) + 1;
+                if (k < 1) k = 1;
+                if (k > currentBatch) k = currentBatch;
+
+                simState.totalRolls += k;
+                finishSimulation(true);
+            } else {
+                // No success in this batch
+                simState.totalRolls += currentBatch;
+                
+                // Check cap
+                if (simState.totalRolls >= simState.maxRolls) {
+                    finishSimulation(false);
+                } else {
+                    simState.rafId = requestAnimationFrame(loop);
+                }
+            }
+        };
+
+        // Start loop
+        simState.rafId = requestAnimationFrame(loop);
+
+        // UI Update Loop (decoupled from sim loop for performance)
+        simState.updateInterval = setInterval(() => {
+            if(simState.running) {
+                const now = performance.now();
+                const elapsed = (now - simState.startTime) / 1000;
+                document.getElementById('simRolls').innerText = formatNumber(simState.totalRolls);
+                document.getElementById('simTime').innerText = elapsed.toFixed(2) + 's';
+            }
+        }, 100);
+    }
+
+    function stopSimulation() {
+        if (!simState.running) return;
+        simState.running = false;
+        cancelAnimationFrame(simState.rafId);
+        clearInterval(simState.updateInterval);
+        
+        const now = performance.now();
+        const elapsed = (now - simState.startTime) / 1000;
+        
+        document.getElementById('simStatus').innerText = "Stopped";
+        document.getElementById('simStatus').style.color = "var(--text-muted)";
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('btnStop').disabled = true;
+        
+        // Final UI update
+        document.getElementById('simRolls').innerText = formatNumber(simState.totalRolls);
+        document.getElementById('simTime').innerText = elapsed.toFixed(2) + 's';
+    }
+
+    function finishSimulation(success) {
+        simState.running = false;
+        cancelAnimationFrame(simState.rafId);
+        clearInterval(simState.updateInterval);
+
+        const now = performance.now();
+        const elapsed = (now - simState.startTime) / 1000;
+
+        document.getElementById('simRolls').innerText = formatNumber(simState.totalRolls);
+        document.getElementById('simTime').innerText = elapsed.toFixed(2) + 's';
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('btnStop').disabled = true;
+
+        if (success) {
+            document.getElementById('simStatus').innerText = "SUCCESS!";
+            document.getElementById('simStatus').style.color = "var(--success)";
+            // Small delay to allow UI to repaint before alert
+            setTimeout(() => alert(`You got the aura in ${formatNumber(simState.totalRolls)} rolls! Time: ${elapsed.toFixed(2)}s`), 10);
+        } else {
+            document.getElementById('simStatus').innerText = "Max Limit Reached";
+            document.getElementById('simStatus').style.color = "var(--danger)";
+            setTimeout(() => alert(`Failed to get aura after ${formatNumber(simState.totalRolls)} rolls.`), 10);
+        }
+    }
+
+    // --- Template System ---
+    function openTemplates() {
+        document.getElementById('templateModal').style.display = "flex";
+        renderTemplates();
+        fetchTemplatesFromWiki();
+    }
+
+    function closeTemplates() {
+        document.getElementById('templateModal').style.display = "none";
+    }
+
+    function renderTemplates() {
+        const list = document.getElementById('templateList');
+        list.innerHTML = "";
+        const search = document.getElementById('templateSearch').value.toLowerCase();
+
+        const filtered = loadedTemplates.filter(t => {
+            return t.name.toLowerCase().includes(search) && t.rarity >= TEMPLATE_THRESHOLD;
+        });
+
+        // Sort by rarity
+        filtered.sort((a,b) => a.rarity - b.rarity);
+
+        filtered.forEach(t => {
+            const li = document.createElement('li');
+            li.className = "template-item";
+            li.innerHTML = `
+                <span>${t.name}</span>
+                <span class="template-rarity">1 in ${formatNumber(t.rarity)}</span>
+            `;
+            li.onclick = () => {
+                document.getElementById('baseRarity').value = formatNumber(t.rarity);
+                closeTemplates();
+                calculateChance();
+            };
+            list.appendChild(li);
+        });
+    }
+
+    function filterTemplates() {
+        renderTemplates();
+    }
+
+    async function fetchTemplatesFromWiki() {
+        const statusSpan = document.getElementById('sourceStatus');
+        statusSpan.innerText = "Fetching Wiki...";
+        
+        try {
+            const response = await fetch(PROXY_URL);
+            if (!response.ok) throw new Error("Proxy error");
+            const data = await response.json();
+            const html = data.contents;
+
+            const lines = html.split(/\r?\n/);
+            const found = {};
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const text = line.replace(/<[^>]+>/g, '');
+                
+                let match = text.match(/1\s*\/\s*([0-9][0-9,]*)/);
+                
+                if (!match) {
+                   const numMatch = text.match(/\b([0-9]{1,3}(?:,[0-9]{3})+)\b/);
+                   if(numMatch) match = [numMatch[0], numMatch[1]];
+                }
+
+                if (match) {
+                    const numStr = match[1].replace(/,/g, '');
+                    const rarity = parseInt(numStr, 10);
+                    
+                    if (!isNaN(rarity) && rarity >= TEMPLATE_THRESHOLD) {
+                        let name = null;
+                        for (let k = i - 1; k >= Math.max(0, i - 6); k--) {
+                            let candidate = lines[k].replace(/<[^>]+>/g, '').trim();
+                            if (!candidate) continue;
+                            if (candidate.match(/[0-9],/)) continue;
+                            if (candidate.toLowerCase().includes("image")) continue;
+                            if (candidate.length > 100) continue;
+                            
+                            name = candidate;
+                            break;
+                        }
+                        
+                        if (name) {
+                            if (!found[name] || rarity > found[name]) {
+                                found[name] = rarity;
+                            }
+                        }
+                    }
+                }
+            }
+
+            const newTemplates = [];
+            for (const [name, rarity] of Object.entries(found)) {
+                newTemplates.push({name, rarity});
+            }
+
+            if (newTemplates.length > 0) {
+                loadedTemplates = newTemplates;
+                renderTemplates();
+                statusSpan.innerText = "Wiki Data Loaded";
+                statusSpan.style.color = "var(--success)";
+            } else {
+                throw new Error("No data found");
+            }
+
+        } catch (e) {
+            console.error(e);
+            statusSpan.innerText = "Wiki Fetch Failed (Using Built-in)";
+            statusSpan.style.color = "var(--danger)";
+        }
+    }
+
+    // --- Init ---
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('templateModal')) {
+            closeTemplates();
+        }
+    }
+    
+    calculateChance();
+
+</script>
+
+</body>
+</html>
